@@ -1,3 +1,15 @@
+
+#![feature(decl_macro)]
+
+use rocket::get;
+
 fn main() {
-    println!("Hello, world!");
+    rocket::ignite()
+        .mount("/", rocket::routes![hello])
+        .launch();
+}
+
+#[get("/hello")]
+fn hello() -> &'static str {
+    "Hello, World"
 }
