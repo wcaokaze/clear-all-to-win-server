@@ -2,6 +2,8 @@
 #![feature(decl_macro)]
 
 use rocket::get;
+use rocket_contrib::json::Json;
+use serde::Serialize;
 
 fn main() {
     rocket::ignite()
@@ -10,6 +12,17 @@ fn main() {
 }
 
 #[get("/hello")]
-fn hello() -> &'static str {
-    "Hello, World"
+fn hello() -> Json<Greeting> {
+    let greeting = Greeting {
+        content: "Hello, World".to_string(),
+        number: 42
+    };
+
+    Json(greeting)
+}
+
+#[derive(Serialize)]
+struct Greeting {
+    content: String,
+    number: i32
 }
