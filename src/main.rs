@@ -5,6 +5,12 @@ use rocket::get;
 use rocket_contrib::json::Json;
 use serde::Serialize;
 
+#[macro_use]
+extern crate diesel;
+
+mod schema;
+mod models;
+
 fn main() {
     rocket::ignite()
         .mount("/", rocket::routes![hello])
