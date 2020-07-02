@@ -90,11 +90,11 @@ Rocketの仕様次第ではJSON以外も受け付けるかもしれないけど�
 ## GameRecord
 
 - `id`: String  
-    ID。基本的にサーバに保存された時刻になるが、保証されない。POST時省略可。
+    ID。POST時省略可。
 - `player_name`: String?  
     プレイヤー名(null可)
-- `start_time`: Int  
-    ゲーム開始時刻(エポックミリ秒)
+- `start_time`: String  
+    ゲーム開始時刻(yyyyMMdd'T'HHmm'Z')
 - `initial_field`: Field  
     ゲーム開始直後のフィールド。
 - `rule`: [[Bool]]  
