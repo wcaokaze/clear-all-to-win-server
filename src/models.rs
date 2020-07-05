@@ -1,14 +1,27 @@
 
-use chrono::NaiveDateTime;
-use diesel::Queryable;
+use diesel::{Queryable, Insertable};
+use crate::schema::gamerecords;
 
 #[derive(Queryable)]
 pub struct Gamerecord {
-    id: i64,
-    player_name: String,
-    start_time: NaiveDateTime,
-    initial_field: Vec<Vec<bool>>,
-    rule: [[bool; 3]; 3],
-    steps: Vec<String>
+    pub id: i64,
+    pub player_name: Option<String>,
+    pub start_time: String,
+    pub initial_field_width: i16,
+    pub initial_field_height: i16,
+    pub initial_field: Vec<bool>,
+    pub rule: Vec<bool>,
+    pub steps: Vec<String>
 }
 
+#[derive(Insertable)]
+#[table_name = "gamerecords"]
+pub struct NewGamerecord {
+    pub player_name: Option<String>,
+    pub start_time: String,
+    pub initial_field_width: i16,
+    pub initial_field_height: i16,
+    pub initial_field: Vec<bool>,
+    pub rule: Vec<bool>,
+    pub steps: Vec<String>
+}

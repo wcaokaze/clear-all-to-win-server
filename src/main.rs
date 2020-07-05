@@ -1,5 +1,6 @@
 
 #![feature(decl_macro)]
+#![feature(try_trait)]
 
 use rocket::get;
 use rocket_contrib::json::Json;
@@ -10,10 +11,11 @@ extern crate diesel;
 
 mod schema;
 mod models;
+mod api;
 
 fn main() {
     rocket::ignite()
-        .mount("/", rocket::routes![hello])
+        .mount("/api/v1", rocket::routes![api::v1::gamerecords::save_gamerecord])
         .launch();
 }
 
