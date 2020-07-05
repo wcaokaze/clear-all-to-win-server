@@ -2,7 +2,9 @@ use super::{Field, Gamerecord, Step};
 use crate::models;
 
 pub trait IntoDb<D> {
-    fn into_db(self) -> D;
+    type Err;
+
+    fn into_db(self) -> Result<D, Self::Err>;
 }
 
 pub trait FromDb<D> where Self: Sized {
@@ -68,8 +70,10 @@ impl FromDb<&models::Gamerecord> for Field {
 }
 
 impl IntoDb<String> for Step {
-    fn into_db(self) -> String {
-        format!("{},{},{}", self.time, self.point.0, self.point.1)
+    type Err = ();
+
+    fn into_db(self) -> Result<String, ()> {
+        Ok(format!("{},{},{}", self.time, self.point.0, self.point.1))
     }
 }
 

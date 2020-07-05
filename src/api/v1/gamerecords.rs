@@ -68,38 +68,42 @@ impl Response {
     }
 }
 
-fn into_db_entity(api_entity: NewGamerecord) -> Result<db_models::NewGamerecord, String> {
-    let NewGamerecord {
-        player_name,
-        start_time,
-        initial_field: Field {
-            width: initial_field_width,
-            height: initial_field_height,
-            cells: initial_field_cells
-        },
-        rule,
-        steps
-    } = api_entity;
+impl IntoDb<db_models::NewGamerecord> for NewGamerecord {
+    type Err = String;
 
-    if initial_field_width <= 0 || initial_field_width >= i16::MAX as i32 {
-        return Err("invalid initial field size".to_string());
+    fn into_db(self) -> Result<db_models::NewGamerecord, String> {
+        let NewGamerecord {
+            player_name,
+            start_time,
+            initial_field: Field {
+                width: initial_field_width,
+                height: initial_field_height,
+                cells: initial_field_cells
+            },
+            rule,
+            steps
+        } = self;
+
+        if initial_field_width <= 0 || initial_field_width >= i16::MAX as i32 {
+            return Err("invalid initial field size".to_string());
+        }
+
+        if initial_field_height <= 0 || initial_field_height >= i16::MAX as i32 {
+            return Err("invalid initial field size".to_string());
+        }
+
+        let db_entity = db_models::NewGamerecord {
+            player_name,
+            start_time,
+            initial_field_width:  initial_field_width  as i16,
+            initial_field_height: initial_field_height as i16,
+            initial_field: initial_field_cells.into_iter().flatten().collect(),
+            rule: rule.iter().flatten().map(|&b| b).collect(),
+            steps: steps.into_iter().map(|s| s.into_db().unwrap()).collect()
+        };
+
+        Ok(db_entity)
     }
-
-    if initial_field_height <= 0 || initial_field_height >= i16::MAX as i32 {
-        return Err("invalid initial field size".to_string());
-    }
-
-    let db_entity = db_models::NewGamerecord {
-        player_name,
-        start_time,
-        initial_field_width:  initial_field_width  as i16,
-        initial_field_height: initial_field_height as i16,
-        initial_field: initial_field_cells.into_iter().flatten().collect(),
-        rule: rule.iter().flatten().map(|&b| b).collect(),
-        steps: steps.into_iter().map(|s| s.into_db()).collect()
-    };
-
-    Ok(db_entity)
 }
 
 fn connect_database() -> ConnectionResult<PgConnection> {
@@ -109,7 +113,7 @@ fn connect_database() -> ConnectionResult<PgConnection> {
 
 #[post("/gamerecords", data = "<gamerecord>")]
 pub fn save_gamerecord(gamerecord: Json<NewGamerecord>) -> Response {
-    let new_gamerecord = into_db_entity(gamerecord.0)
+    let new_gamerecord = gamerecord.0.into_db()
         .map_err(|message| Response::bad_request(message))?;
 
     let connection = connect_database()
