@@ -15,7 +15,10 @@ mod api;
 
 fn main() {
     rocket::ignite()
-        .mount("/api/v1", rocket::routes![api::v1::gamerecords::save_gamerecord])
+        .mount("/api/v1", rocket::routes![
+            api::v1::gamerecords::save_gamerecord,
+            api::v1::gamerecords::load_gamerecord
+        ])
         .launch();
 }
 

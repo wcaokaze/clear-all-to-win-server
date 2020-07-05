@@ -1,7 +1,8 @@
 
-use diesel::{RunQueryDsl, PgConnection, Connection};
+use diesel::{RunQueryDsl, PgConnection, Connection, ConnectionResult};
+use diesel::prelude::*;
 use rocket::http::Status;
-use rocket::post;
+use rocket::{get, post};
 use rocket::response::Responder;
 use rocket::response::status::BadRequest;
 use rocket_contrib::json::Json;
@@ -25,7 +26,8 @@ pub struct NewGamerecord {
 pub enum Response {
     Ok(Json<Gamerecord>),
     BadRequest(BadRequest<String>),
-    InternalServerError(Status)
+    NotFound(Status),
+    InternalServerError(Status),
 }
 
 impl std::ops::Try for Response {
@@ -55,6 +57,10 @@ impl Response {
 
     fn bad_request(reason: String) -> Response {
         Response::BadRequest(BadRequest(Some(reason)))
+    }
+
+    fn not_found() -> Response {
+        Response::NotFound(Status::NotFound)
     }
 
     fn internal_server_error() -> Response {
@@ -96,14 +102,17 @@ fn into_db_entity(api_entity: NewGamerecord) -> Result<db_models::NewGamerecord,
     Ok(db_entity)
 }
 
+fn connect_database() -> ConnectionResult<PgConnection> {
+    let database_url = env::var("DATABASE_URL").expect("DATABASE_URL must be set");
+    PgConnection::establish(&database_url)
+}
+
 #[post("/gamerecords", data = "<gamerecord>")]
 pub fn save_gamerecord(gamerecord: Json<NewGamerecord>) -> Response {
     let new_gamerecord = into_db_entity(gamerecord.0)
         .map_err(|message| Response::bad_request(message))?;
 
-    let database_url = env::var("DATABASE_URL").expect("DATABASE_URL must be set");
-
-    let connection = PgConnection::establish(&database_url)
+    let connection = connect_database()
         .map_err(|_| Response::internal_server_error())?;
 
     let result = diesel::insert_into(gamerecords::table)
@@ -112,6 +121,30 @@ pub fn save_gamerecord(gamerecord: Json<NewGamerecord>) -> Response {
         .map_err(|_| Response::internal_server_error())?;
 
     let gamerecord = Gamerecord::from_db(result)
+        .map_err(|_| Response::internal_server_error())?;
+
+    Response::ok(gamerecord)
+}
+
+#[get("/gamerecords/<gamerecord_id>")]
+pub fn load_gamerecord(gamerecord_id: String) -> Response {
+    use crate::schema::gamerecords::dsl::*;
+
+    let gamerecord_id = gamerecord_id.parse::<i64>()
+        .map_err(|_| Response::not_found())?;
+
+    let connection = connect_database()
+        .map_err(|_| Response::internal_server_error())?;
+
+    let mut results: Vec<db_models::Gamerecord> = gamerecords
+        .filter(id.eq(gamerecord_id))
+        .limit(2)
+        .load(&connection)
+        .map_err(|_| Response::internal_server_error())?;
+
+    let gamerecord = results.pop().ok_or(Response::not_found())?;
+
+    let gamerecord = Gamerecord::from_db(gamerecord)
         .map_err(|_| Response::internal_server_error())?;
 
     Response::ok(gamerecord)
